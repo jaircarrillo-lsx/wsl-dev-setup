@@ -51,10 +51,33 @@ download_latest() {
         ASSET_NAME="${ASSET_NAME}.tar.gz"
     fi
 
-    DOWNLOAD_URL=$(curl -fsSL "$LATEST_URL" | grep "browser_download_url" | grep "$ASSET_NAME" | head -1 | cut -d '"' -f 4)
+    # Build curl args with optional auth
+    CURL_ARGS=(-fsSL -H "Accept: application/vnd.github+json")
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+        CURL_ARGS+=(-H "Authorization: Bearer $GITHUB_TOKEN")
+    fi
+    CURL_ARGS+=("$LATEST_URL")
+
+    # Retry with backoff
+    local max_retries=3
+    local retry=0
+    local DOWNLOAD_URL=""
+
+    while [[ $retry -lt $max_retries && -z "$DOWNLOAD_URL" ]]; do
+        DOWNLOAD_URL=$(curl "${CURL_ARGS[@]}" 2>/dev/null | grep "browser_download_url" | grep "$ASSET_NAME" | head -1 | cut -d '"' -f 4)
+        
+        if [[ -z "$DOWNLOAD_URL" ]]; then
+            retry=$((retry + 1))
+            if [[ $retry -lt $max_retries ]]; then
+                log_warn "Rate limited or asset not found, retrying in $((retry * 5))s... (attempt $retry/$max_retries)"
+                sleep $((retry * 5))
+            fi
+        fi
+    done
 
     if [[ -z "$DOWNLOAD_URL" ]]; then
-        log_error "Could not find release asset for $OS/$ARCH"
+        log_error "Could not find release asset for $OS/$ARCH after $max_retries attempts"
+        log_info "Try setting GITHUB_TOKEN environment variable to increase rate limits"
         exit 1
     fi
 
@@ -63,7 +86,14 @@ download_latest() {
     TMP_DIR=$(mktemp -d)
     trap 'rm -rf "$TMP_DIR"' EXIT
 
-    curl -fsSL -o "$TMP_DIR/$ASSET_NAME" "$DOWNLOAD_URL"
+    # Download with auth if available
+    DOWNLOAD_ARGS=(-fsSL)
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+        DOWNLOAD_ARGS+=(-H "Authorization: Bearer $GITHUB_TOKEN")
+    fi
+    DOWNLOAD_ARGS+=(-o "$TMP_DIR/$ASSET_NAME" "$DOWNLOAD_URL")
+
+    curl "${DOWNLOAD_ARGS[@]}"
 
     if [[ "$ASSET_NAME" == *.zip ]]; then
         unzip -q "$TMP_DIR/$ASSET_NAME" -d "$TMP_DIR"
