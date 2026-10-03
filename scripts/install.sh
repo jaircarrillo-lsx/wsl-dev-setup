@@ -1,10 +1,10 @@
 #!/bin/bash
 # Universal installer for wsl-dev-setup
-# Usage: curl -fsSL https://github.com/lunar-debian/wsl-dev-setup/releases/latest/download/install.sh | bash
+# Usage: curl -fsSL https://github.com/jaircarrillo-lsx/wsl-dev-setup/releases/latest/download/install.sh | bash
 
 set -euo pipefail
 
-REPO="lunar-debian/wsl-dev-setup"
+REPO="jaircarrillo-lsx/wsl-dev-setup"
 BINARY="wsl-dev-setup"
 INSTALL_DIR="${HOME}/.local/bin"
 
