@@ -40,7 +40,7 @@ checksum:
 
 release:
   github:
-    owner: lunar-debian
+    owner: jaircarrillo-lsx
     name: wsl-dev-setup
   draft: false
   prerelease: auto
@@ -51,7 +51,7 @@ release:
 
   footer: |
     ---
-    **Full Changelog**: https://github.com/lunar-debian/wsl-dev-setup/compare/{{.PreviousTag}}...{{.Tag}}
+    **Full Changelog**: https://github.com/jaircarrillo-lsx/wsl-dev-setup/compare/{{.PreviousTag}}...{{.Tag}}
 
 changelog:
   sort: asc
@@ -66,7 +66,7 @@ changelog:
 homebrew_casks:
   - name: wsl-dev-setup
     repository:
-      owner: lunar-debian
+      owner: jaircarrillo-lsx
       name: homebrew-tap
     commit_author:
       name: goreleaserbot
@@ -74,8 +74,8 @@ homebrew_casks:
 
 dockers:
   - image_templates:
-      - "ghcr.io/lunar-debian/wsl-dev-setup:{{ .Tag }}"
-      - "ghcr.io/lunar-debian/wsl-dev-setup:latest"
+      - "ghcr.io/jaircarrillo-lsx/wsl-dev-setup:{{ .Tag }}"
+      - "ghcr.io/jaircarrillo-lsx/wsl-dev-setup:latest"
     dockerfile: Dockerfile
     build_flag_templates:
       - "--platform=linux/amd64,linux/arm64"
