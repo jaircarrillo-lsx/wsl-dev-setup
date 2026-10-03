@@ -63,15 +63,6 @@ changelog:
       - Merge pull request
       - Merge branch
 
-homebrew_casks:
-  - name: wsl-dev-setup
-    repository:
-      owner: jaircarrillo-lsx
-      name: homebrew-tap
-    commit_author:
-      name: goreleaserbot
-      email: goreleaser@users.noreply.github.com
-
 dockers:
   - image_templates:
       - "ghcr.io/jaircarrillo-lsx/wsl-dev-setup:{{ .Tag }}"
@@ -83,3 +74,7 @@ dockers:
     goarch:
       - amd64
       - arm64
+    # Skip if no buildx support
+    extra_files:
+      - glob: README.md
+      - glob: LICENSE
