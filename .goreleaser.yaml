@@ -62,3 +62,7 @@ changelog:
       - '^chore:'
       - Merge pull request
       - Merge branch
+
+# Skip validation and publish - we handle manually
+validate: false
+publish: false
