@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  wsl-dev-setup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: wsl-dev-setup:local
+    container_name: wsl-dev-setup-test
+    volumes:
+      - ${HOME}:/root
+      - ${HOME}/.config:/root/.config
+    environment:
+      - HOME=/root
+    entrypoint: ["/usr/local/bin/wsl-dev-setup"]
+    command: ["doctor"]
+    # Para testing interactivo:
+    # command: ["install", "--skip-system-base", "--skip-fonts", "--skip-opencode", "--skip-chsh"]
+    stdin_open: true
+    tty: true
+
+  # Versión para desarrollo (con Go instalado)
+  wsl-dev-setup-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: wsl-dev-setup:dev
+    container_name: wsl-dev-setup-dev
+    volumes:
+      - .:/src
+      - ${HOME}:/root
+    working_dir: /src
+    stdin_open: true
+    tty: true

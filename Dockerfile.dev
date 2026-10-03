@@ -1,0 +1,20 @@
+# Development Dockerfile - includes Go toolchain
+FROM golang:1.23-alpine AS dev
+
+RUN apk add --no-cache \
+    git \
+    make \
+    bash \
+    zsh \
+    curl \
+    wget \
+    ca-certificates
+
+WORKDIR /src
+
+# Pre-cache dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Default command
+CMD ["sh"]
