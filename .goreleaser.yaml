@@ -1,0 +1,85 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: wsl-dev-setup
+    main: ./main.go
+    binary: wsl-dev-setup
+    goos:
+      - linux
+      - windows
+      - darwin
+      - android
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    env:
+      - CGO_ENABLED=0
+
+archives:
+  - format: tar.gz
+    name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: "{{.ProjectName}}_{{.Version}}_checksums.txt"
+  algorithm: sha256
+
+release:
+  github:
+    owner: lunar-debian
+    name: wsl-dev-setup
+  draft: false
+  prerelease: auto
+  header: |
+    # Changelog
+
+    ## What's Changed
+
+  footer: |
+    ---
+    **Full Changelog**: https://github.com/lunar-debian/wsl-dev-setup/compare/{{.PreviousTag}}...{{.Tag}}
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - Merge pull request
+      - Merge branch
+
+homebrew_casks:
+  - name: wsl-dev-setup
+    repository:
+      owner: lunar-debian
+      name: homebrew-tap
+    commit_author:
+      name: goreleaserbot
+      email: goreleaser@users.noreply.github.com
+
+dockers:
+  - image_templates:
+      - "ghcr.io/lunar-debian/wsl-dev-setup:{{ .Tag }}"
+      - "ghcr.io/lunar-debian/wsl-dev-setup:latest"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/amd64,linux/arm64"
+    goos: linux
+    goarch:
+      - amd64
+      - arm64
