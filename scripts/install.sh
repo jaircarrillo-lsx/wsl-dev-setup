@@ -51,10 +51,12 @@ download_latest() {
         ASSET_NAME="${ASSET_NAME}.tar.gz"
     fi
 
-    # Build curl args with optional auth
+    # Build curl args with optional auth (check env var and command line arg)
+    local github_token="${GITHUB_TOKEN:-${GITHUB_TOKEN_ARG:-}}"
+    
     CURL_ARGS=(-fsSL -H "Accept: application/vnd.github+json")
-    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-        CURL_ARGS+=(-H "Authorization: Bearer $GITHUB_TOKEN")
+    if [[ -n "$github_token" ]]; then
+        CURL_ARGS+=(-H "Authorization: Bearer $github_token")
     fi
     CURL_ARGS+=("$LATEST_URL")
 
@@ -77,7 +79,7 @@ download_latest() {
 
     if [[ -z "$DOWNLOAD_URL" ]]; then
         log_error "Could not find release asset for $OS/$ARCH after $max_retries attempts"
-        log_info "Try setting GITHUB_TOKEN environment variable to increase rate limits"
+        log_info "Try setting GITHUB_TOKEN environment variable or use --token flag"
         exit 1
     fi
 
@@ -88,8 +90,8 @@ download_latest() {
 
     # Download with auth if available
     DOWNLOAD_ARGS=(-fsSL)
-    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-        DOWNLOAD_ARGS+=(-H "Authorization: Bearer $GITHUB_TOKEN")
+    if [[ -n "$github_token" ]]; then
+        DOWNLOAD_ARGS+=(-H "Authorization: Bearer $github_token")
     fi
     DOWNLOAD_ARGS+=(-o "$TMP_DIR/$ASSET_NAME" "$DOWNLOAD_URL")
 
@@ -145,6 +147,27 @@ verify_install() {
 }
 
 main() {
+    # Parse arguments
+    local GITHUB_TOKEN_ARG=""
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --token|-t)
+                GITHUB_TOKEN_ARG="$2"
+                shift 2
+                ;;
+            --help|-h)
+                echo "Usage: $0 [--token TOKEN]"
+                echo "  --token, -t  GitHub token for API authentication (or set GITHUB_TOKEN env var)"
+                exit 0
+                ;;
+            *)
+                log_error "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
+    export GITHUB_TOKEN_ARG
+
     echo "=================================="
     echo "  wsl-dev-setup installer"
     echo "=================================="
