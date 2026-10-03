@@ -7,11 +7,6 @@ on:
         description: 'Version tag (e.g., v1.0.0)'
         required: true
         type: string
-      dry_run:
-        description: 'Dry run (no publish)'
-        required: false
-        type: boolean
-        default: false
 
   push:
     tags:
@@ -47,8 +42,8 @@ jobs:
       - name: Test binary
         run: ./wsl-dev-setup doctor
 
-  goreleaser:
-    name: GoReleaser (binaries)
+  release-binaries:
+    name: Build & Release Binaries
     runs-on: ubuntu-latest
     needs: validate
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -64,34 +59,42 @@ jobs:
           go-version: '1.23'
           cache: true
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+      - name: Build all binaries
+        run: |
+          # Linux amd64
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%d)" -o dist/wsl-dev-setup_linux_amd64 .
+          # Linux arm64
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%d)" -o dist/wsl-dev-setup_linux_arm64 .
+          # macOS amd64
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%d)" -o dist/wsl-dev-setup_darwin_amd64 .
+          # macOS arm64
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%d)" -o dist/wsl-dev-setup_darwin_arm64 .
+          # Windows amd64
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%d)" -o dist/wsl-dev-setup_windows_amd64.exe .
+          # Android arm64 (Termux)
+          CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%d)" -o dist/wsl-dev-setup_android_arm64 .
+
+      - name: Create archives
+        run: |
+          cd dist
+          for f in wsl-dev-setup*; do
+            if [[ $f == *.exe ]]; then
+              zip "${f%.exe}.zip" "$f"
+            else
+              tar -czf "${f}.tar.gz" "$f"
+            fi
+          done
+          sha256sum * > checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'push'
         with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean --skip=publish ${{ github.event.inputs.dry_run && '--snapshot' || '' }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: dist/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  docker:
-    name: Docker (manual only)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.build_docker == 'true'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push (amd64)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64
-          push: true
-          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }},ghcr.io/${{ github.repository }}:latest
