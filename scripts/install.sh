@@ -71,15 +71,13 @@ download_latest() {
         tar -xzf "$TMP_DIR/$ASSET_NAME" -C "$TMP_DIR"
     fi
 
-    if [[ ! -f "$TMP_DIR/$BINARY" ]]; then
-        # Try to find the binary
-        FOUND=$(find "$TMP_DIR" -name "$BINARY" -type f | head -1)
-        if [[ -n "$FOUND" ]]; then
-            cp "$FOUND" "$TMP_DIR/$BINARY"
-        else
-            log_error "Binary not found in archive"
-            exit 1
-        fi
+    # The binary inside archive has platform suffix, find and rename it
+    FOUND=$(find "$TMP_DIR" -name "wsl-dev-setup*" -type f ! -name "*.tar.gz" ! -name "*.zip" ! -name "install.sh" | head -1)
+    if [[ -n "$FOUND" ]]; then
+        cp "$FOUND" "$TMP_DIR/$BINARY"
+    else
+        log_error "Binary not found in archive"
+        exit 1
     fi
 
     chmod +x "$TMP_DIR/$BINARY"
