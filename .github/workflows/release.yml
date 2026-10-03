@@ -74,6 +74,11 @@ jobs:
           # Android arm64 (Termux)
           CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%d)" -o dist/wsl-dev-setup_android_arm64 .
 
+      - name: Copy install.sh
+        run: |
+          cp scripts/install.sh dist/install.sh
+          chmod +x dist/install.sh
+
       - name: Create archives
         run: |
           cd dist
@@ -92,7 +97,9 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          files: dist/*
+          files: |
+            dist/wsl-dev-setup_*
+            dist/install.sh
           draft: false
           prerelease: false
           generate_release_notes: true
